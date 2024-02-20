@@ -3,7 +3,7 @@ use std::{ffi::OsStr, path::{Path, PathBuf}};
 use image::{io::Reader as ImgR, math::Rect, DynamicImage, GenericImageView, Rgba};
 
 pub fn process(path: PathBuf) {
-    let Ok(Ok(img)) = ImgR::open(&path).map(|img| img.decode()) else {
+    let Some(img) = ImgR::open(&path).ok().and_then(|img| img.decode().ok()) else {
         eprintln!("Failed to load and decode image.");
         return;
     };
