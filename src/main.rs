@@ -2,6 +2,9 @@
 
 use std::{ffi::OsStr, fs::metadata, path::{Path, PathBuf}, str::FromStr};
 
+use algs::experimental::Experimental;
+
+mod algs;
 mod processing;
 
 fn main() {
@@ -12,19 +15,19 @@ fn main() {
     let targets = if meta.is_dir() {
         let arg = std::env::args().nth(2).map(|s| s.to_lowercase());
         let no_recurse = arg.as_deref() == Some("norec");
-        walk_dir(path, no_recurse).expect("Failed to walk directory")
+        walk_dir(path, !no_recurse).expect("Failed to walk directory")
     } else {
         vec![PathBuf::from_str(&path).unwrap()]
     };
 
     //Process all target images
     for img in targets {
-        processing::process(img);
+        processing::process::<Experimental>(img);
     }
 }
 
 //Collect all images in the folder + subpaths
-fn walk_dir<P: AsRef<Path>>(path: P, no_recurse: bool) -> Option<Vec<PathBuf>> {
+fn walk_dir<P: AsRef<Path>>(path: P, recurse: bool) -> Option<Vec<PathBuf>> {
     fn is_img<P: AsRef<Path>>(path: P) -> bool {
         let buf = PathBuf::from(path.as_ref());
         let ext = buf.extension().map(OsStr::to_string_lossy).unwrap().to_string();
@@ -37,7 +40,7 @@ fn walk_dir<P: AsRef<Path>>(path: P, no_recurse: bool) -> Option<Vec<PathBuf>> {
         .filter_map(|entry| entry.ok())
         .for_each(|file| {
             let path = file.path();
-            if !no_recurse && path.is_dir() {
+            if recurse && path.is_dir() {
                 let subtargets = walk_dir(&path, true).unwrap_or(vec![]);
                 targets.extend(subtargets.into_iter());
             } else if is_img(&path) {
