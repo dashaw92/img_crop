@@ -7,6 +7,7 @@ pub(crate) trait Algorithm {
     fn find_photo(img: &DynamicImage) -> Option<Rect>;
 }
 
+//Determine if a pixel is "close enough" to a target color using an epsilon.
 pub(crate) fn pixel_is(pix: &Rgba<u8>, color: (u8, u8, u8), epsilon: u8) -> bool {
     let [r, g, b, _] = pix.0;
 

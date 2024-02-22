@@ -1,4 +1,6 @@
-use image::{math::Rect, DynamicImage, GenericImageView, Rgba};
+use std::convert::identity;
+
+use image::{math::Rect, DynamicImage, GenericImageView};
 
 use crate::algs::pixel_is;
 
@@ -6,55 +8,26 @@ use super::Algorithm;
 
 pub(crate) struct Experimental;
 
+//This algorithm "marches" up all four borders of the image, stopping once a non-white pixel
+//has been found. This determines the coordinate that can be cropped up to without losing image data.
+//This algorithm properly handles all images, including those not aligned to 90 degrees, unlike the Original
+//algorithm. When applied to those images, this algorithm will retain all white space required to avoid
+//losing image data.
 impl Algorithm for Experimental {
     fn find_photo(img: &DynamicImage) -> Option<Rect> {
-        let is_white_pixel = |pix: &Rgba<u8>| pixel_is(pix, (255, 255, 255), 10);
+        //Add one to a coordinate to ensure image data isn't cut-off.
+        //Clamps to the provided max value to maintain validity of coordinates.
+        let add_clamped = |max: u32| {
+            move |coord: u32| (coord + 1).min(max)
+        };
 
-        let mut x1 = None;
-        let mut y1 = None;
-        let mut x2 = None;
-        let mut y2 = None;
+        //Find all four borders
+        let x1 = horz_border(0..img.width(), &img, identity);
+        let y1 = vert_border(0..img.height(), &img, identity);
+        let x2 = horz_border((0..img.width()).rev(), &img, add_clamped(img.width()));
+        let y2 = vert_border((0..img.height()).rev(), &img, add_clamped(img.height()));
 
-        'find_left_border: for x in 0..img.width() {
-            for y in 0..img.height() {
-                let pix = &img.get_pixel(x, y);
-                if !is_white_pixel(pix) {
-                    x1 = Some(x);
-                    break 'find_left_border;
-                }
-            }
-        }
-
-        'find_right_border: for x in (0..img.width()).rev() {
-            for y in 0..img.height() {
-                let pix = &img.get_pixel(x, y);
-                if !is_white_pixel(pix) {
-                    x2 = Some(x);
-                    break 'find_right_border;
-                }
-            }
-        }
-
-        'find_top_border: for y in 0..img.height() {
-            for x in 0..img.width() {
-                let pix = &img.get_pixel(x, y);
-                if !is_white_pixel(pix) {
-                    y1 = Some(y);
-                    break 'find_top_border;
-                }
-            }
-        }
-
-        'find_bottom_border: for y in (0..img.height()).rev() {
-            for x in 0..img.width() {
-                let pix = &img.get_pixel(x, y);
-                if !is_white_pixel(pix) {
-                    y2 = Some(y);
-                    break 'find_bottom_border;
-                }
-            }
-        }
-
+        //Unwrap all four coordinates into a rectangle or yield nothing.
         match (x1, y1, x2, y2) {
             (Some(x1), Some(y1), Some(x2), Some(y2)) => Some(Rect {
                 x: x1,
@@ -65,4 +38,34 @@ impl Algorithm for Experimental {
             _ => None
         }
     }
+}
+
+//Find a vertical border using the provided iterator before transforming it via the mapping function.
+fn vert_border<F>(y_iter: impl Iterator<Item = u32>, img: &DynamicImage, mapping: F) -> Option<u32> 
+where F: Fn(u32) -> u32 {
+    for y in y_iter {
+        for x in 0..img.width() {
+            let pix = &img.get_pixel(x, y);
+            if !pixel_is(pix, (255, 255, 255), 10) {
+                return Some(mapping(y))
+            }
+        }
+    }
+
+    None
+}
+
+//Find a horizontal border using the provided iterator before transforming it via the mapping function.
+fn horz_border<F>(x_iter: impl Iterator<Item = u32>, img: &DynamicImage, mapping: F) -> Option<u32> 
+where F: Fn(u32) -> u32 {
+    for x in x_iter {
+        for y in 0..img.height() {
+            let pix = &img.get_pixel(x, y);
+            if !pixel_is(pix, (255, 255, 255), 10) {
+                return Some(mapping(x));
+            }
+        }
+    }
+
+    None
 }
