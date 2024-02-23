@@ -1,6 +1,6 @@
 use image::{math::Rect, DynamicImage, GenericImageView};
 
-use super::{pixel_is, Algorithm};
+use super::{pixel_is_consistent, Algorithm};
 
 #[deprecated]
 pub(crate) struct Original;
@@ -17,7 +17,7 @@ impl Algorithm for Original {
         //Find the first non-white pixel in the image via 1D array (0..img.width * img.height) traversal.
         //This will provide 2/4 coordinates required to crop the image.
         let (x1, y1) = img.pixels().into_iter().find(|(_, _, pix)| {
-            !pixel_is(pix, (255, 255, 255), 10)
+            !pixel_is_consistent(pix)
         }).map(|(x, y, _)| (x, y)).expect("No starting pixel was found within the criteria.");
 
         //From the x1 value found before, march straight down in the image until the first white pixel is found.
@@ -25,7 +25,7 @@ impl Algorithm for Original {
         let mut y2 = img.height();
         for dy in y1..img.height() {
             let pix = &img.get_pixel(x1, dy);
-            if pixel_is(pix, (255, 255, 255), 10) {
+            if pixel_is_consistent(pix) {
                 y2 = dy;
                 break;
             }
@@ -36,7 +36,7 @@ impl Algorithm for Original {
         let mut x2 = img.width();
         for dx in x1..img.width() {
             let pix = &img.get_pixel(dx, y1);
-            if pixel_is(pix, (255, 255, 255), 10) {
+            if pixel_is_consistent(pix) {
                 x2 = dx;
                 break;
             }

@@ -15,3 +15,9 @@ pub(crate) fn pixel_is(pix: &Rgba<u8>, color: (u8, u8, u8), epsilon: u8) -> bool
     && color.1.abs_diff(g) < epsilon 
     && color.2.abs_diff(b) < epsilon
 }
+
+pub(crate) fn pixel_is_consistent(pix: &Rgba<u8>) -> bool {
+    let [r, _, _, _] = pix.0;
+
+    pixel_is(pix, (r, r, r), 20)
+}

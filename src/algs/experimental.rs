@@ -2,9 +2,7 @@ use std::convert::identity;
 
 use image::{math::Rect, DynamicImage, GenericImageView};
 
-use crate::algs::pixel_is;
-
-use super::Algorithm;
+use super::{pixel_is_consistent, Algorithm};
 
 pub(crate) struct Experimental;
 
@@ -46,7 +44,7 @@ where F: Fn(u32) -> u32 {
     for y in y_iter {
         for x in 0..img.width() {
             let pix = &img.get_pixel(x, y);
-            if !pixel_is(pix, (255, 255, 255), 10) {
+            if !pixel_is_consistent(pix) {
                 return Some(mapping(y))
             }
         }
@@ -61,7 +59,7 @@ where F: Fn(u32) -> u32 {
     for x in x_iter {
         for y in 0..img.height() {
             let pix = &img.get_pixel(x, y);
-            if !pixel_is(pix, (255, 255, 255), 10) {
+            if !pixel_is_consistent(pix) {
                 return Some(mapping(x));
             }
         }
