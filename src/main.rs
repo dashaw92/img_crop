@@ -1,6 +1,9 @@
-// #![windows_subsystem = "windows"]
-
-use std::{ffi::OsStr, fs::metadata, path::{Path, PathBuf}, str::FromStr};
+use std::{
+    ffi::OsStr,
+    fs::metadata,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use algs::experimental::Experimental;
 
@@ -25,13 +28,13 @@ fn main() {
         walk_dir(path, !no_recurse).expect("Failed to walk directory")
     } else {
         //Only this image will be cropped
-        vec![PathBuf::from_str(&path).expect("Path is invalid (does the filesystem support this path???)")]
+        vec![PathBuf::from_str(&path)
+            .expect("Path is invalid (does the filesystem support this path???)")]
     };
 
-    //Process all target images
-    for img in targets {
-        processing::process::<Experimental>(img);
-    }
+    targets
+        .into_iter()
+        .for_each(processing::process::<Experimental>);
 }
 
 //Collect all images in the folder + subpaths
@@ -44,9 +47,13 @@ fn walk_dir<P: AsRef<Path>>(path: P, recurse: bool) -> Option<Vec<PathBuf>> {
     //and basing judgement solely off the extension is silly.
     fn is_img<P: AsRef<Path>>(path: P) -> bool {
         let buf = PathBuf::from(path.as_ref());
-        let Some(ext) = buf.extension().map(OsStr::to_string_lossy).map(|ext| ext.to_string()) else {
+        let Some(ext) = buf
+            .extension()
+            .map(OsStr::to_string_lossy)
+            .map(|ext| ext.to_string())
+        else {
             //Image has no extension. See above, this is a hacky determination.
-            return false
+            return false;
         };
 
         matches!(ext.to_lowercase().as_str(), "png" | "jpg" | "jpeg" | "bmp")
@@ -55,7 +62,8 @@ fn walk_dir<P: AsRef<Path>>(path: P, recurse: bool) -> Option<Vec<PathBuf>> {
     //Recursively accumulate all images in the given path (or not, if recurse is false).
     let mut targets = vec![];
 
-    std::fs::read_dir(path).ok()?
+    std::fs::read_dir(path)
+        .ok()?
         .filter_map(|entry| entry.ok())
         .for_each(|file| {
             let path = file.path();

@@ -6,22 +6,22 @@ use crate::algs::Algorithm;
 
 //Processes an image and saves the cropped output to a new image with
 //a suffixed file name in the same directory it's located in.
-pub(crate) fn process<Alg: Algorithm>(path: PathBuf) -> Option<PathBuf> {
+pub(crate) fn process<Alg: Algorithm>(path: PathBuf) {
     //Load an image from disk at the given path
     let Some(img) = ImgR::open(&path).ok().and_then(|img| img.decode().ok()) else {
         eprintln!("Failed to load and decode image.");
-        return None;
+        return
     };
 
     //Attempt to find the minimum sub-image required to retain all image data while cropping out
     //extra white borders using the provided algorithm implementation.
     let Some(Rect { x, y, width, height }) = <Alg>::find_photo(&img) else {
-        return None;
+        return
     };
 
     if x == 0 && width == img.width() && y == 0 && height == img.height() {
         println!("Skipping already cropped image.");
-        return None;
+        return
     }
 
     //Retrieve a sub-image view using the cropped viewport found.
@@ -31,8 +31,6 @@ pub(crate) fn process<Alg: Algorithm>(path: PathBuf) -> Option<PathBuf> {
 
     //Save the newly cropped version in the same location with a suffixed name.
     photo.to_image().save(&path).expect("Failed to save img");
-
-    Some(path)
 }
 
 //Given a path, determine the new filename of a cropped image based off the original.
